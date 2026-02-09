@@ -1,0 +1,22 @@
+{
+  "name": "social-campaign-manager",
+  "version": "1.0.0",
+  "description": "Gestione campagne social per Tastiere Digitali",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "npm-run-all --parallel dev:backend dev:frontend",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "social",
+    "campaign",
+    "management"
+  ],
+  "author": "Tastiere Digitali",
+  "license": "MIT",
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
