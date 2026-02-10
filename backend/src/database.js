@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -6,15 +6,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const dbPath = process.env.DATABASE_PATH || join(__dirname, '../database.sqlite');
-const db = new Database(dbPath);
+
+// Crea database con verbose per debug
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('❌ Error opening database:', err.message);
+  } else {
+    console.log('📦 Connected to SQLite database');
+  }
+});
 
 // Abilita foreign keys
-db.pragma('foreign_keys = ON');
+db.run('PRAGMA foreign_keys = ON');
 
 // Inizializza le tabelle
 const initDB = () => {
   // Tabella Clienti
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS clients (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -28,7 +36,7 @@ const initDB = () => {
   `);
 
   // Tabella Social Network per cliente
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS client_socials (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       client_id INTEGER NOT NULL,
@@ -43,7 +51,7 @@ const initDB = () => {
   `);
 
   // Tabella Campagne
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS campaigns (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       client_id INTEGER NOT NULL,
@@ -62,7 +70,7 @@ const initDB = () => {
   `);
 
   // Tabella Attività
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       campaign_id INTEGER NOT NULL,
@@ -77,9 +85,13 @@ const initDB = () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
     )
-  `);
-
-  console.log('✅ Database initialized successfully');
+  `, (err) => {
+    if (err) {
+      console.error('❌ Error initializing database:', err.message);
+    } else {
+      console.log('✅ Database initialized successfully');
+    }
+  });
 };
 
 initDB();

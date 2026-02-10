@@ -5,165 +5,181 @@ const router = express.Router();
 
 // GET tutti i clienti
 router.get('/', (req, res) => {
-  try {
-    const clients = db.prepare('SELECT * FROM clients ORDER BY name').all();
+  db.all('SELECT * FROM clients ORDER BY name', [], (err, clients) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
     res.json(clients);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  });
 });
 
 // GET singolo cliente
 router.get('/:id', (req, res) => {
-  try {
-    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(req.params.id);
+  db.get('SELECT * FROM clients WHERE id = ?', [req.params.id], (err, client) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
     if (!client) {
       return res.status(404).json({ error: 'Cliente non trovato' });
     }
     res.json(client);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  });
 });
 
 // POST crea cliente
 router.post('/', (req, res) => {
-  try {
-    const { name, email, phone, website, notes } = req.body;
+  const { name, email, phone, website, notes } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Il nome è obbligatorio' });
-    }
-
-    const stmt = db.prepare(`
-      INSERT INTO clients (name, email, phone, website, notes)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(name, email, phone, website, notes);
-    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
-
-    res.status(201).json(client);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  if (!name) {
+    return res.status(400).json({ error: 'Il nome è obbligatorio' });
   }
+
+  db.run(
+    'INSERT INTO clients (name, email, phone, website, notes) VALUES (?, ?, ?, ?, ?)',
+    [name, email, phone, website, notes],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      db.get('SELECT * FROM clients WHERE id = ?', [this.lastID], (err, client) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json(client);
+      });
+    }
+  );
 });
 
 // PUT aggiorna cliente
 router.put('/:id', (req, res) => {
-  try {
-    const { name, email, phone, website, notes } = req.body;
+  const { name, email, phone, website, notes } = req.body;
 
-    const stmt = db.prepare(`
-      UPDATE clients
-      SET name = ?, email = ?, phone = ?, website = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
+  db.run(
+    `UPDATE clients
+     SET name = ?, email = ?, phone = ?, website = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [name, email, phone, website, notes, req.params.id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-    const result = stmt.run(name, email, phone, website, notes, req.params.id);
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Cliente non trovato' });
+      }
 
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Cliente non trovato' });
+      db.get('SELECT * FROM clients WHERE id = ?', [req.params.id], (err, client) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json(client);
+      });
     }
-
-    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(req.params.id);
-    res.json(client);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  );
 });
 
 // DELETE elimina cliente
 router.delete('/:id', (req, res) => {
-  try {
-    const stmt = db.prepare('DELETE FROM clients WHERE id = ?');
-    const result = stmt.run(req.params.id);
+  db.run('DELETE FROM clients WHERE id = ?', [req.params.id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
 
-    if (result.changes === 0) {
+    if (this.changes === 0) {
       return res.status(404).json({ error: 'Cliente non trovato' });
     }
 
     res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  });
 });
 
 // GET social networks di un cliente
 router.get('/:id/socials', (req, res) => {
-  try {
-    const socials = db.prepare('SELECT * FROM client_socials WHERE client_id = ?').all(req.params.id);
+  db.all('SELECT * FROM client_socials WHERE client_id = ?', [req.params.id], (err, socials) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
     res.json(socials);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  });
 });
 
 // POST aggiungi social network a cliente
 router.post('/:id/socials', (req, res) => {
-  try {
-    const { platform, username, url } = req.body;
-    const clientId = req.params.id;
+  const { platform, username, url } = req.body;
+  const clientId = req.params.id;
 
-    if (!platform) {
-      return res.status(400).json({ error: 'La piattaforma è obbligatoria' });
-    }
-
-    const stmt = db.prepare(`
-      INSERT INTO client_socials (client_id, platform, username, url)
-      VALUES (?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(clientId, platform, username, url);
-    const social = db.prepare('SELECT * FROM client_socials WHERE id = ?').get(result.lastInsertRowid);
-
-    res.status(201).json(social);
-  } catch (error) {
-    if (error.message.includes('UNIQUE constraint')) {
-      return res.status(400).json({ error: 'Questo social è già presente per il cliente' });
-    }
-    res.status(500).json({ error: error.message });
+  if (!platform) {
+    return res.status(400).json({ error: 'La piattaforma è obbligatoria' });
   }
+
+  db.run(
+    'INSERT INTO client_socials (client_id, platform, username, url) VALUES (?, ?, ?, ?)',
+    [clientId, platform, username, url],
+    function(err) {
+      if (err) {
+        if (err.message.includes('UNIQUE constraint')) {
+          return res.status(400).json({ error: 'Questo social è già presente per il cliente' });
+        }
+        return res.status(500).json({ error: err.message });
+      }
+
+      db.get('SELECT * FROM client_socials WHERE id = ?', [this.lastID], (err, social) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json(social);
+      });
+    }
+  );
 });
 
 // PUT aggiorna social network
 router.put('/:clientId/socials/:socialId', (req, res) => {
-  try {
-    const { platform, username, url, active } = req.body;
+  const { platform, username, url, active } = req.body;
 
-    const stmt = db.prepare(`
-      UPDATE client_socials
-      SET platform = ?, username = ?, url = ?, active = ?
-      WHERE id = ? AND client_id = ?
-    `);
+  db.run(
+    `UPDATE client_socials
+     SET platform = ?, username = ?, url = ?, active = ?
+     WHERE id = ? AND client_id = ?`,
+    [platform, username, url, active ? 1 : 0, req.params.socialId, req.params.clientId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-    const result = stmt.run(platform, username, url, active ? 1 : 0, req.params.socialId, req.params.clientId);
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Social non trovato' });
+      }
 
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Social non trovato' });
+      db.get('SELECT * FROM client_socials WHERE id = ?', [req.params.socialId], (err, social) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json(social);
+      });
     }
-
-    const social = db.prepare('SELECT * FROM client_socials WHERE id = ?').get(req.params.socialId);
-    res.json(social);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  );
 });
 
 // DELETE elimina social network
 router.delete('/:clientId/socials/:socialId', (req, res) => {
-  try {
-    const stmt = db.prepare('DELETE FROM client_socials WHERE id = ? AND client_id = ?');
-    const result = stmt.run(req.params.socialId, req.params.clientId);
+  db.run(
+    'DELETE FROM client_socials WHERE id = ? AND client_id = ?',
+    [req.params.socialId, req.params.clientId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Social non trovato' });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Social non trovato' });
+      }
+
+      res.status(204).send();
     }
-
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  );
 });
 
 export default router;
