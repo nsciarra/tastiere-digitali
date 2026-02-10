@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tastiere-digitali-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_PATH=/app/data/database.sqlite
+      - NODE_ENV=production
+    volumes:
+      - backend-data:/app/data
+    restart: unless-stopped
+    networks:
+      - tastiere-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tastiere-digitali-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - tastiere-network
+
+volumes:
+  backend-data:
+    driver: local
+
+networks:
+  tastiere-network:
+    driver: bridge

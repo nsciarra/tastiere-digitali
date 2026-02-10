@@ -1,0 +1,27 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Database
+*.sqlite
+*.db
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs
+*.log
