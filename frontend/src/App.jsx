@@ -10,7 +10,7 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard onNavigate={setCurrentPage} />
       case 'clients':
         return <ClientsPage />
       case 'campaigns':
@@ -18,7 +18,7 @@ function App() {
       case 'tasks':
         return <TasksPage />
       default:
-        return <Dashboard />
+        return <Dashboard onNavigate={setCurrentPage} />
     }
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function Dashboard() {
+function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState({
     clients: 0,
     campaigns: 0,
@@ -79,19 +79,35 @@ function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div
+          className="stat-card stat-card-clickable"
+          onClick={() => onNavigate('clients')}
+          title="Clicca per vedere tutti i clienti"
+        >
           <div className="stat-label">Clienti Totali</div>
           <div className="stat-value">{stats.clients}</div>
         </div>
-        <div className="stat-card">
+        <div
+          className="stat-card stat-card-clickable"
+          onClick={() => onNavigate('campaigns')}
+          title="Clicca per vedere tutte le campagne"
+        >
           <div className="stat-label">Campagne Totali</div>
           <div className="stat-value">{stats.campaigns}</div>
         </div>
-        <div className="stat-card">
+        <div
+          className="stat-card stat-card-clickable"
+          onClick={() => onNavigate('campaigns')}
+          title="Clicca per vedere le campagne attive"
+        >
           <div className="stat-label">Campagne Attive</div>
           <div className="stat-value">{stats.activeCampaigns}</div>
         </div>
-        <div className="stat-card">
+        <div
+          className="stat-card stat-card-clickable"
+          onClick={() => onNavigate('tasks')}
+          title="Clicca per vedere tutte le attività"
+        >
           <div className="stat-label">Attività Totali</div>
           <div className="stat-value">{stats.tasks}</div>
         </div>
