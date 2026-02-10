@@ -44,10 +44,21 @@ function Dashboard() {
 
   const handleCompleteTask = async (task) => {
     try {
+      // Invia solo i campi necessari per l'update
+      const taskData = {
+        campaign_id: task.campaign_id,
+        title: task.title,
+        description: task.description || '',
+        due_date: task.due_date,
+        priority: task.priority,
+        status: 'completed',
+        assigned_to: task.assigned_to || ''
+      }
+
       await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...task, status: 'completed' })
+        body: JSON.stringify(taskData)
       })
 
       // Ricarica i dati
