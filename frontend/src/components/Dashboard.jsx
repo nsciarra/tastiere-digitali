@@ -42,6 +42,21 @@ function Dashboard() {
     }
   }
 
+  const handleCompleteTask = async (task) => {
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...task, status: 'completed' })
+      })
+
+      // Ricarica i dati
+      loadDashboardData()
+    } catch (error) {
+      console.error('Errore completamento task:', error)
+    }
+  }
+
   if (loading) {
     return <div className="loading">Caricamento...</div>
   }
@@ -81,24 +96,64 @@ function Dashboard() {
         ) : (
           <div className="card-body">
             {upcomingTasks.map(task => (
-              <div key={task.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{task.title}</div>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                      {task.client_name} - {task.campaign_name}
+              <div
+                key={task.id}
+                style={{
+                  padding: '1.25rem',
+                  borderBottom: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(107, 90, 207, 0.05)'
+                  e.currentTarget.style.transform = 'translateX(4px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.transform = 'translateX(0)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--primary)' }}>
+                      {task.title}
                     </div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-light)', marginTop: '0.375rem' }}>
+                      👤 {task.client_name} • 📱 {task.campaign_name}
+                    </div>
+                    {task.description && (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                        {task.description}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <span className={`badge badge-${
                       task.priority === 'high' ? 'danger' :
                       task.priority === 'medium' ? 'warning' : 'success'
                     }`}>
-                      {task.priority}
+                      {task.priority === 'high' ? '⬆️ Alta' :
+                       task.priority === 'medium' ? '➡️ Media' : '⬇️ Bassa'}
                     </span>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-light)' }}>
-                      {new Date(task.due_date).toLocaleDateString('it-IT')}
+                    <span style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--text-light)',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      📅 {new Date(task.due_date).toLocaleDateString('it-IT')}
                     </span>
+                    <button
+                      className="btn btn-success btn-small"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCompleteTask(task)
+                      }}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      ✓ Completa
+                    </button>
                   </div>
                 </div>
               </div>
